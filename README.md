@@ -2,13 +2,11 @@
 
 Hydro OJ 的比赛代码查重插件。管理员在输入比赛 ID 和相似度阈值后，插件按题目和语言分别调用 [JPlag](https://github.com/jplag/JPlag)，并在页面展示相似的提交对和并排代码 Diff。
 
-## 运行环境
+插件要求 Linux x64（x86_64）系统。
 
-- Ubuntu Linux x64（x86_64）及 Node.js 22 或更新版本。
-- 随 npm 包附带 Java 21 运行时、JPlag 6.2.0 JAR 和所需的 JavaScript 文件；服务器无需另行安装 Java 或 JPlag。
+插件自带 Java 21 运行时、JPlag 6.2.0 jar，服务器无需另行安装 Java 和 JPlag，真正做到下载即用。
 
-本包只发布 Linux x64 运行时，不支持其他操作系统或 CPU 架构。
-由于内置 Java 和 JPlag，当前 npm 压缩包约 137 MB。
+由于内置 Java 和 JPlag，当前插件大小已超过 100 MB。
 
 ## 安装
 
