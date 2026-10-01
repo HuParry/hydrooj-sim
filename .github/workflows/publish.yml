@@ -1,0 +1,77 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.repository == 'HuParry/sim'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Use an npm version that supports trusted publishing
+        run: npm install --global npm@^11.5.1
+
+      - name: Check tag and bundled files
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const pkg = require('./package.json');
+          if (pkg.name !== 'hydrooj-sim') throw new Error('Unexpected package name');
+          if (process.env.RELEASE_TAG !== `v${pkg.version}`) {
+            throw new Error(`Tag ${process.env.RELEASE_TAG} does not match package version ${pkg.version}`);
+          }
+          for (const file of [
+            'index.ts',
+            'template/sim.html',
+            'lib/jplag-6.2.0-jar-with-dependencies.jar',
+            'runtime/linux-x64/bin/java',
+            'runtime/linux-x64/lib/modules',
+            'runtime/linux-x64/lib/ct.sym',
+            'LICENSE',
+          ]) {
+            if (!fs.existsSync(file) || !fs.statSync(file).size) throw new Error(`Missing or empty: ${file}`);
+          }
+          fs.accessSync('runtime/linux-x64/bin/java', fs.constants.X_OK);
+          NODE
+          file runtime/linux-x64/bin/java | grep -q 'ELF 64-bit.*x86-64'
+
+      - name: Check npm package contents
+        run: |
+          npm pack --dry-run --json | node -e '
+            let input = "";
+            process.stdin.on("data", chunk => input += chunk);
+            process.stdin.on("end", () => {
+              const files = new Set(JSON.parse(input)[0].files.map(file => file.path));
+              for (const file of [
+                "index.ts", "template/sim.html", "LICENSE",
+                "lib/jplag-6.2.0-jar-with-dependencies.jar",
+                "runtime/linux-x64/bin/java", "runtime/linux-x64/lib/modules",
+                "runtime/linux-x64/lib/ct.sym",
+              ]) {
+                if (!files.has(file)) throw new Error(`Missing from npm tarball: ${file}`);
+              }
+            });
+          '
+
+      - name: Publish
+        run: npm publish

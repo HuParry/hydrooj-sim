@@ -1,0 +1,195 @@
+{% extends "layout/basic.html" %}
+{% block content %}
+<style>
+  .sim-diff-trigger { margin: 0; padding: .35rem .8rem; white-space: nowrap; }
+  .sim-diff-dialog { width: min(96vw, 1600px); max-width: none; height: min(88vh, 920px); max-height: none; padding: 0; border: 0; border-radius: 10px; box-shadow: 0 18px 60px rgba(0, 0, 0, .28); }
+  .sim-diff-dialog::backdrop { background: rgba(24, 32, 43, .5); }
+  .sim-diff-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .sim-diff-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1.2rem; border-bottom: 1px solid #dfe4ea; }
+  .sim-diff-toolbar h2 { margin: 0; font-size: 1.15rem; }
+  .sim-diff-close { margin: 0; padding: .35rem .8rem; }
+  .sim-diff-submissions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; border-bottom: 1px solid #dfe4ea; background: #f7f9fb; }
+  .sim-diff-submissions > div { min-width: 0; padding: .6rem 1rem; overflow-wrap: anywhere; }
+  .sim-diff-submissions > div + div { border-left: 1px solid #dfe4ea; }
+  .sim-diff-scroll { flex: 1; min-height: 0; overflow: auto; background: #fff; }
+  .sim-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 680px; }
+  .sim-diff-side { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); min-width: 0; border-bottom: 1px solid #f0f2f4; }
+  .sim-diff-side + .sim-diff-side { border-left: 1px solid #dfe4ea; }
+  .sim-diff-line-number { padding: .1rem .6rem .1rem .2rem; color: #87919e; text-align: right; user-select: none; background: #f7f9fb; }
+  .sim-diff-code { display: block; min-height: 1.5em; margin: 0; padding: .1rem .6rem; font-family: var(--code-font-family, monospace); font-size: .85rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
+  .sim-diff-removed { background: #fff0ef; }
+  .sim-diff-added { background: #e9f8ed; }
+  .sim-diff-removed .sim-diff-line-number { color: #b33a35; background: #ffe2df; }
+  .sim-diff-added .sim-diff-line-number { color: #258445; background: #d9f1df; }
+  .sim-diff-word-removed { color: #b52621; background: #ffd5d1; }
+  .sim-diff-word-added { color: #187a35; background: #c8edcf; }
+  .sim-diff-message { padding: 1.5rem; color: #59636e; }
+</style>
+<div class="row">
+  <div class="medium-12 columns">
+    <div class="section">
+      <div class="section__header">
+        <h1 class="section__title">比赛代码查重（基于JPlag）</h1>
+      </div>
+      <div class="section__body">
+        <blockquote class="note">
+          <p>输入比赛 ID 和相似度阈值后，系统会检查比赛中所有题目的已完成提交，并展示相似度达到阈值的提交对。</p>
+          <p>注意，过短的代码（例如helloworld题）不会参与查重。</p>
+        </blockquote>
+        <form method="post" action="/sim">
+          <div class="row">
+            <div class="medium-4 columns">
+              <label>比赛 ID
+                <input class="textbox" name="tid" required value="{{ form.tid.toString() if form and form.tid else '' }}" placeholder="24 位比赛 ID">
+              </label>
+            </div>
+            <div class="medium-4 columns">
+              <label>相似度阈值（%）
+                <input class="textbox" type="number" name="threshold" min="0" max="100" value="{{ form.threshold if form and form.threshold is defined else 50 }}" required>
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="rounded primary button">开始查重</button>
+        </form>
+      </div>
+    </div>
+
+    {% if error %}
+    <div class="section"><div class="section__body"><p class="text-danger">{{ error }}</p></div></div>
+    {% endif %}
+    {% if contest and results %}
+    <div class="section">
+      <div class="section__header"><h2 class="section__title">{{ contest.title }}：查重结果</h2></div>
+      <div class="section__body">
+        {% if not results.length %}<p>没有查重结果。</p>{% endif %}
+        {% for result in results %}
+        <div style="margin-bottom: 1.5rem">
+        <h3><a href="{{ url('problem_detail', pid=result.problem.pid|default(result.problem.docId), query={tid:contest.docId}) }}">{{ result.problem.pid }} — {{ result.problem.title }}</a></h3>
+        <p>读取提交：{{ result.recordCount }} 份</p>
+        {% for error in result.errors %}
+        <p class="text-danger">{{ error }}</p>
+        {% endfor %}
+        {% if not result.pairs.length %}
+        {% if not result.errors.length %}<p>没有查重结果。</p>{% endif %}
+        {% else %}
+        <details>
+          <summary>关联用户：{% for uid in result.userUids %}<a href="{{ url('user_detail', uid=uid) }}">UID {{ uid }}</a>{% if not loop.last %}、{% endif %}{% endfor %}；相似度：{{ result.similarityMin }} ~ {{ result.similarityMax }}。</summary>
+        <table class="data-table">
+          <thead><tr>
+            <th>提交 A</th><th>提交 B</th><th>相似度</th><th style="text-align: right">代码对比</th>
+          </tr></thead>
+          <tbody>
+            {% for pair in result.pairs %}
+            <tr>
+              <td><a href="{{ url('record_detail', { rid: pair.leftRecord._id }) }}">{{ pair.leftRecord._id.toString() }}</a>（<a href="{{ url('user_detail', uid=pair.leftRecord.uid) }}">UID {{ pair.leftRecord.uid }}</a>）</td>
+              <td><a href="{{ url('record_detail', { rid: pair.rightRecord._id }) }}">{{ pair.rightRecord._id.toString() }}</a>（<a href="{{ url('user_detail', uid=pair.rightRecord.uid) }}">UID {{ pair.rightRecord.uid }}</a>）</td>
+              <td>{{ pair.displaySimilarity }}%</td>
+              <td style="text-align: right"><button type="button" class="rounded button sim-diff-trigger" data-sim-diff-url="{{ url('sim_diff', tid=contest.docId, left=pair.leftRecord._id, right=pair.rightRecord._id) }}">Diff</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        </details>
+        {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% if contest and results %}
+<dialog id="sim-diff-dialog" class="sim-diff-dialog" aria-labelledby="sim-diff-title">
+  <div class="sim-diff-panel">
+    <div class="sim-diff-toolbar">
+      <h2 id="sim-diff-title">提交代码对比</h2>
+      <button type="button" class="rounded button sim-diff-close" data-sim-diff-close>关闭</button>
+    </div>
+    <div class="sim-diff-submissions"><div id="sim-diff-left"></div><div id="sim-diff-right"></div></div>
+    <div id="sim-diff-content" class="sim-diff-scroll" aria-live="polite"></div>
+  </div>
+</dialog>
+{% endif %}
+{% endblock %}
+{% block script %}
+<script>
+(() => {
+  const dialog = document.getElementById('sim-diff-dialog');
+  if (!dialog) return;
+  const content = document.getElementById('sim-diff-content');
+  const leftTitle = document.getElementById('sim-diff-left');
+  const rightTitle = document.getElementById('sim-diff-right');
+  let requestNumber = 0;
+
+  function renderSide(row, side) {
+    const cell = document.createElement('div');
+    const changed = side === 'left' ? row.leftChanged : row.rightChanged;
+    cell.className = 'sim-diff-side' + (changed ? side === 'left' ? ' sim-diff-removed' : ' sim-diff-added' : '');
+    const number = document.createElement('span');
+    number.className = 'sim-diff-line-number';
+    number.textContent = row[side + 'Number'] == null ? '' : String(row[side + 'Number']);
+    const code = document.createElement('code');
+    code.className = 'sim-diff-code';
+    for (const part of row[side]) {
+      const text = document.createElement('span');
+      if (part.changed) text.className = side === 'left' ? 'sim-diff-word-removed' : 'sim-diff-word-added';
+      text.textContent = part.text;
+      code.appendChild(text);
+    }
+    cell.append(number, code);
+    return cell;
+  }
+
+  function renderSubmissionTitle(target, label, submission) {
+    const userLink = document.createElement('a');
+    userLink.href = submission.userUrl;
+    userLink.textContent = `UID ${submission.uid}`;
+    const recordLink = document.createElement('a');
+    recordLink.href = submission.recordUrl;
+    recordLink.textContent = submission.rid;
+    target.replaceChildren(
+      document.createTextNode(`${label} · `), userLink,
+      document.createTextNode(` · ${submission.lang} · `), recordLink,
+    );
+  }
+
+  function render(data) {
+    renderSubmissionTitle(leftTitle, '提交 A', data.left);
+    renderSubmissionTitle(rightTitle, '提交 B', data.right);
+    const fragment = document.createDocumentFragment();
+    for (const row of data.rows) {
+      const line = document.createElement('div');
+      line.className = 'sim-diff-row';
+      line.append(renderSide(row, 'left'), renderSide(row, 'right'));
+      fragment.appendChild(line);
+    }
+    content.replaceChildren(fragment);
+    content.scrollTop = 0;
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-sim-diff-url]');
+    if (!button) return;
+    const current = ++requestNumber;
+    leftTitle.textContent = '提交 A';
+    rightTitle.textContent = '提交 B';
+    content.textContent = '正在加载代码差异…';
+    content.classList.add('sim-diff-message');
+    if (!dialog.open) dialog.showModal();
+    try {
+      const response = await fetch(button.dataset.simDiffUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('请求失败');
+      const data = await response.json();
+      if (current !== requestNumber || !dialog.open) return;
+      content.classList.remove('sim-diff-message');
+      render(data);
+    } catch (error) {
+      if (current !== requestNumber || !dialog.open) return;
+      content.textContent = '无法加载代码差异，请刷新页面后重试。';
+    }
+  });
+  dialog.querySelector('[data-sim-diff-close]').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => { requestNumber++; });
+})();
+</script>
+{% endblock %}
