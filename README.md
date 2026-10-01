@@ -34,6 +34,12 @@ hydrooj addon add hydrooj-sim
 
 每个语言组的运行超时默认为 300 秒，可通过 Hydro 系统设置 `jplag.timeoutSeconds` 调整，允许范围为 10–1800 秒。代码和 JPlag 报告只写入请求期间的临时目录，请求结束后会删除。
 
+## 效果图
+
+![](docs/1.png)
+
+![](docs/2.png)
+
 ## 许可
 
 本插件以 [AGPL-3.0-or-later](LICENSE) 发布。随包的 JPlag JAR 使用 GPL-3.0，许可文本见 [`lib/JPLAG-LICENSE.txt`](lib/JPLAG-LICENSE.txt)。Java 运行时的许可及第三方声明位于 `runtime/linux-x64/legal/`；jsdiff 和 adm-zip 的许可分别位于 `lib/vendor/JSDIFF-LICENSE.txt` 与 `lib/vendor/adm-zip/LICENSE`。
