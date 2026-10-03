@@ -111,8 +111,8 @@ interface SimilarityPair {
     right: string;
     similarity?: number;
     displaySimilarity?: number;
-    leftRecord?: { _id: ObjectId; uid: number };
-    rightRecord?: { _id: ObjectId; uid: number };
+    leftRecord?: { _id: ObjectId, uid: number };
+    rightRecord?: { _id: ObjectId, uid: number };
 }
 
 interface ProblemResult {
@@ -266,7 +266,7 @@ async function runSimilarityJob(job: SimJobDoc) {
         const tdoc = await ContestModel.get(job.domainId, job.tid);
         const groups = new Map<string, {
             problem: any; language: string; dir: string;
-            candidates: { _id: ObjectId; uid: number }[];
+            candidates: { _id: ObjectId, uid: number }[];
         }>();
         const problems = await ProblemModel.getList(job.domainId, tdoc.pids, true, true, ProblemModel.PROJECTION_CONTEST_LIST);
         const byDocId = new Map(tdoc.pids.map((pid) => [pid, problems[pid]]));
