@@ -2,9 +2,9 @@
 
 Hydro OJ 的比赛代码查重插件。管理员在输入比赛 ID 和相似度阈值后，插件按题目和语言分别调用 [JPlag](https://github.com/jplag/JPlag)，并在页面展示相似的提交对和并排代码 Diff。
 
-插件要求 Linux x64（x86_64）系统。
+插件自带 JPlag 6.2.0 JAR 和 Linux x64（x86_64）Java 21 运行时。在 Linux x64 系统上，插件自动使用内置 Java，服务器无需另行安装 Java 或 JPlag。
 
-插件自带 Java 21 运行时、JPlag 6.2.0 jar，服务器无需另行安装 Java 和 JPlag，真正做到下载即用。
+其他操作系统或 CPU 架构使用服务器 PATH 中的 `java`。请安装 Java 21 或更高版本，并确保 Hydro 服务进程能够执行 `java`。
 
 由于内置 Java 和 JPlag，当前插件大小已超过 100 MB。
 

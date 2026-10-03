@@ -11,7 +11,10 @@ import {
 
 const execFileAsync = promisify(execFile);
 const JPLAG_JAR = path.join(__dirname, 'lib', 'jplag-6.2.0-jar-with-dependencies.jar');
-const JPLAG_JAVA = path.join(__dirname, 'runtime', 'linux-x64', 'bin', 'java');
+const USE_BUNDLED_JAVA = process.platform === 'linux' && process.arch === 'x64';
+const JPLAG_JAVA = USE_BUNDLED_JAVA
+    ? path.join(__dirname, 'runtime', 'linux-x64', 'bin', 'java')
+    : 'java';
 const JOB_TTL_MS = 24 * 60 * 60 * 1000;
 const JOB_HEARTBEAT_MS = 10 * 1000;
 const JOB_STALE_MS = 5 * 60 * 1000;
@@ -217,6 +220,9 @@ async function runJPlag(rootDir: string, language: string, threshold: number, ti
         });
     } catch (error) {
         const output = `${error.stderr || ''}\n${error.stdout || ''}`;
+        if (!USE_BUNDLED_JAVA && /UnsupportedClassVersionError/.test(output)) {
+            throw new Error('系统 Java 版本过低，请安装 Java 21 或更高版本，并确保 PATH 中的 java 指向该版本。');
+        }
         if (/Not enough valid submissions/i.test(output)) {
             return { pairs: [], insufficient: true };
         }
@@ -331,7 +337,9 @@ async function runSimilarityJob(job: SimJobDoc) {
                 }
             } catch (error) {
                 result.errors.push(error.code === 'ENOENT'
-                    ? `插件内缺少 JPlag 可执行文件或 Java 运行时，请重新安装完整插件包。`
+                    ? USE_BUNDLED_JAVA
+                        ? '插件内缺少 Java 运行时，请重新安装完整插件包。'
+                        : '未找到系统 Java，请安装 Java 21 或更高版本，并将 java 加入 Hydro 服务进程的 PATH。'
                     : error.killed || error.code === 'ETIMEDOUT'
                         ? `JPlag 比较超过 ${timeoutSeconds} 秒后超时。可在系统设置中提高 jplag.timeoutSeconds。`
                         : `JPlag 执行失败${error.code ? `（退出码 ${error.code}）` : error.signal ? `（${error.signal}）` : ''}：${String(error.stderr || error.stdout || error.message || error).trim().slice(0, 1500)}`);

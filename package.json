@@ -1,6 +1,6 @@
 {
     "name": "hydrooj-sim",
-    "version": "0.2.9",
+    "version": "0.2.10",
     "description": "Contest code similarity checker for Hydro OJ using JPlag",
     "main": "index.ts",
     "files": ["index.ts", "template/", "lib/", "runtime/linux-x64/", "README.md", "LICENSE"],
@@ -13,8 +13,6 @@
     "keywords": ["hydrooj", "hydro", "jplag", "contest", "plagiarism-detection"],
     "license": "AGPL-3.0-or-later",
     "engines": { "node": ">=22" },
-    "os": ["linux"],
-    "cpu": ["x64"],
     "publishConfig": {
         "access": "public",
         "registry": "https://registry.npmjs.org"
