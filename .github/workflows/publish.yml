@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.repository == 'HuParry/sim'
+    if: github.repository == 'HuParry/hydrooj-sim'
     runs-on: ubuntu-24.04
     permissions:
       contents: read

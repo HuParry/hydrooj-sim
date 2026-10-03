@@ -1,15 +1,15 @@
 {
     "name": "hydrooj-sim",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "description": "Contest code similarity checker for Hydro OJ using JPlag",
     "main": "index.ts",
     "files": ["index.ts", "template/", "lib/", "runtime/linux-x64/", "README.md", "LICENSE"],
     "repository": {
         "type": "git",
-        "url": "https://github.com/HuParry/sim"
+        "url": "https://github.com/HuParry/hydrooj-sim"
     },
-    "homepage": "https://github.com/HuParry/sim#readme",
-    "bugs": "https://github.com/HuParry/sim/issues",
+    "homepage": "https://github.com/HuParry/hydrooj-sim#readme",
+    "bugs": "https://github.com/HuParry/hydrooj-sim/issues",
     "keywords": ["hydrooj", "hydro", "jplag", "contest", "plagiarism-detection"],
     "license": "AGPL-3.0-or-later",
     "engines": { "node": ">=22" },

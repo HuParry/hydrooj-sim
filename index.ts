@@ -267,6 +267,7 @@ async function runSimilarityJob(job: SimJobDoc) {
         const records = RecordModel.getMulti(job.domainId, {
             contest: job.tid,
             pid: { $in: tdoc.pids },
+            score: { $gt: 0 },
             code: { $exists: true, $ne: '' },
             judgeAt: { $ne: null },
             status: { $nin: [STATUS.STATUS_WAITING, STATUS.STATUS_FETCHED, STATUS.STATUS_COMPILING, STATUS.STATUS_JUDGING] },
