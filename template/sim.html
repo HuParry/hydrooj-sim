@@ -24,6 +24,10 @@
   .sim-diff-word-removed { color: #b52621; background: #ffd5d1; }
   .sim-diff-word-added { color: #187a35; background: #c8edcf; }
   .sim-diff-message { padding: 1.5rem; color: #59636e; }
+  .sim-progress { margin-top: 1.4rem; padding: 1rem 1.2rem; border: 1px solid #d8e4f2; border-radius: 6px; background: #f7faff; }
+  .sim-progress__heading { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; }
+  .sim-progress__bar { display: block; width: 100%; height: 1rem; accent-color: #3d83c5; }
+  .sim-progress__message { margin: .65rem 0 0; color: #556575; }
 </style>
 <div class="row">
   <div class="medium-12 columns">
@@ -36,7 +40,7 @@
           <p>输入比赛 ID 和相似度阈值后，系统会检查比赛中所有题目的已完成提交，并展示相似度达到阈值的提交对。</p>
           <p>注意，过短的代码（例如helloworld题）不会参与查重。</p>
         </blockquote>
-        <form method="post" action="/sim">
+        <form method="post" action="{{ url('sim') }}" id="sim-start-form">
           <div class="row">
             <div class="medium-4 columns">
               <label>比赛 ID
@@ -51,6 +55,14 @@
           </div>
           <button type="submit" class="rounded primary button">开始查重</button>
         </form>
+        {% if job and job.state != 'done' and job.state != 'failed' %}
+        <div class="sim-progress" data-sim-progress-url="{{ url('sim_progress', jobId=job._id) }}" role="status" aria-live="polite">
+          <div class="sim-progress__heading"><strong>正在查重</strong><strong id="sim-progress-percent">{% if job.total %}{{ jobPercent }}%{% else %}准备中{% endif %}</strong></div>
+          <progress id="sim-progress-bar" class="sim-progress__bar" max="100" {% if job.total %}value="{{ jobPercent }}"{% endif %}></progress>
+          <p id="sim-progress-message" class="sim-progress__message">{% if job.state == 'preparing' %}正在读取比赛提交…{% elif job.state == 'saving' %}正在整理查重结果…{% else %}已完成 {{ job.completed }} / {{ job.total }} 个语言组{% if job.current %}；当前：{{ job.current }}{% endif %}{% endif %}</p>
+          <p class="sim-progress__message">可以稍后刷新本页查看进度，查重会继续在服务器运行。</p>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -113,6 +125,53 @@
 {% endblock %}
 {% block script %}
 <script>
+(() => {
+  const form = document.getElementById('sim-start-form');
+  form?.addEventListener('submit', () => {
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = '正在创建任务…';
+  });
+  const progress = document.querySelector('[data-sim-progress-url]');
+  if (!progress) return;
+  const bar = document.getElementById('sim-progress-bar');
+  const percent = document.getElementById('sim-progress-percent');
+  const message = document.getElementById('sim-progress-message');
+  async function poll() {
+    try {
+      const response = await fetch(progress.dataset.simProgressUrl, {
+        credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        if ([401, 403, 404].includes(response.status)) {
+          message.textContent = '无法读取任务进度，请刷新页面后重试。';
+          return;
+        }
+        throw new Error('Progress request failed');
+      }
+      const data = await response.json();
+      if (data.state === 'done' || data.state === 'failed') {
+        window.location.reload();
+        return;
+      }
+      if (data.percent == null) {
+        bar.removeAttribute('value');
+        percent.textContent = '准备中';
+      } else {
+        bar.value = data.percent;
+        percent.textContent = `${data.percent}%`;
+      }
+      message.textContent = data.state === 'preparing' ? '正在读取比赛提交…'
+        : data.state === 'saving' ? '正在整理查重结果…'
+          : `已完成 ${data.completed} / ${data.total} 个语言组${data.current ? `；当前：${data.current}` : ''}`;
+    } catch (error) {
+      message.textContent = '暂时无法获取进度，正在重试…';
+    }
+    window.setTimeout(poll, 1500);
+  }
+  window.setTimeout(poll, 500);
+})();
+
 (() => {
   const dialog = document.getElementById('sim-diff-dialog');
   if (!dialog) return;
