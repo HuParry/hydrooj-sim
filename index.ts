@@ -185,7 +185,8 @@ function buildDiffRows(leftCode: string, rightCode: string): DiffRow[] {
         const removed: string[] = [];
         const added: string[] = [];
         while (i < changes.length && (changes[i].added || changes[i].removed)) {
-            (changes[i].added ? added : removed).push(...splitLines(changes[i].value));
+            const target = changes[i].added ? added : removed;
+            for (const line of splitLines(changes[i].value)) target.push(line);
             i++;
         }
         for (let line = 0; line < Math.max(removed.length, added.length); line++) {
