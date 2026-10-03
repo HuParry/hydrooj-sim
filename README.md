@@ -41,6 +41,8 @@ hydrooj addon add hydrooj-sim
 
 ![](docs/2.png)
 
+![](docs/3.png)
+
 ## 许可
 
 本插件以 [AGPL-3.0-or-later](LICENSE) 发布。随包的 JPlag JAR 使用 GPL-3.0，许可文本见 [`lib/JPLAG-LICENSE.txt`](lib/JPLAG-LICENSE.txt)。Java 运行时的许可及第三方声明位于 `runtime/linux-x64/legal/`；jsdiff 和 adm-zip 的许可分别位于 `lib/vendor/JSDIFF-LICENSE.txt` 与 `lib/vendor/adm-zip/LICENSE`。
