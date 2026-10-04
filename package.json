@@ -1,6 +1,6 @@
 {
     "name": "hydrooj-sim",
-    "version": "0.2.11",
+    "version": "0.2.12",
     "description": "Contest code similarity checker for Hydro OJ using JPlag",
     "main": "index.ts",
     "files": ["index.ts", "template/", "lib/", "runtime/linux-x64/", "README.md", "LICENSE"],
