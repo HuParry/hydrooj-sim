@@ -12,11 +12,16 @@
 
 1、安装命令：
 
-**方式A：yarn安装**
+**方式A：GitHub Release 压缩包安装 (推荐)**
+
+在 [Releases](https://github.com/HuParry/hydrooj-sim/releases) 页面找到所需版本，在 Assets 中复制 `hydrooj-sim-版本号.tgz` 的下载链接，然后执行：
+
 ```sh
-yarn global add hydrooj-sim
-hydrooj addon add hydrooj-sim
+hydrooj install https://github.com/HuParry/hydrooj-sim/releases/download/v0.2.11/hydrooj-sim-0.2.11.tgz
+pm2 restart hydrooj
 ```
+
+请将示例版本号替换为实际发布版本。使用 Release 附件中的 `.tgz` 安装包；安装命令需要下载链接。
 
 **方式B：git clone + 一键脚本**
 ```sh
