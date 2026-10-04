@@ -17,7 +17,7 @@
 在 [Releases](https://github.com/HuParry/hydrooj-sim/releases) 页面找到所需版本，在 Assets 中复制 `hydrooj-sim-版本号.tgz` 的下载链接，然后执行：
 
 ```sh
-hydrooj install https://github.com/HuParry/hydrooj-sim/releases/download/v0.2.11/hydrooj-sim-0.2.11.tgz
+hydrooj install https://github.com/HuParry/hydrooj-sim/releases/download/v0.2.12/hydrooj-sim-0.2.12.tgz
 pm2 restart hydrooj
 ```
 
