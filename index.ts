@@ -1,4 +1,5 @@
-import { getLanguageProfile as resolveLanguageProfile, buildDiffRows, runJPlag, USE_BUNDLED_JAVA } from './lib/engine.cjs';
+import { buildCodeView } from './lib/code-view.cjs';
+import { getLanguageProfile as resolveLanguageProfile, runJPlag, USE_BUNDLED_JAVA } from './lib/engine.cjs';
 import os from 'os';
 import path from 'path';
 import {
@@ -323,6 +324,13 @@ class SimDiffHandler extends Handler {
             throw new RecordNotFoundError(leftId);
         }
         this.response.addHeader('Cache-Control', 'private, no-store');
+        const input = (record: typeof left) => ({
+            code: record.code, lang: record.lang,
+            highlight: SettingModel.langs[record.lang]?.highlight,
+            monaco: SettingModel.langs[record.lang]?.monaco,
+            codeFile: SettingModel.langs[record.lang]?.code_file,
+        });
+        const { rows } = await buildCodeView(input(left), input(right));
         this.response.body = {
             left: {
                 rid: left._id.toString(), uid: left.uid, lang: left.lang,
@@ -334,8 +342,19 @@ class SimDiffHandler extends Handler {
                 userUrl: this.url('user_detail', { uid: right.uid }),
                 recordUrl: this.url('record_detail', { rid: right._id }),
             },
-            rows: buildDiffRows(left.code, right.code),
+            rows,
         };
+    }
+}
+
+class SimCodeAssetsHandler extends Handler {
+    @param('file', Types.String)
+    async get(domainId: string, file: string) {
+        const assets = { 'code-view-ui.js': 'application/javascript', 'code-view.css': 'text/css' };
+        if (!Object.hasOwn(assets, file)) throw new NotFoundError();
+        this.response.addHeader('Cache-Control', 'no-cache');
+        this.response.type = assets[file];
+        this.response.body = await fs.readFile(path.join(__dirname, 'lib', file), 'utf8');
     }
 }
 
@@ -350,6 +369,7 @@ export async function apply(ctx: Context) {
     ctx.Route('sim', '/sim', SimHandler, PERM.PERM_VIEW);
     ctx.Route('sim_job', '/sim/job/:jobId', SimJobHandler, PERM.PERM_VIEW);
     ctx.Route('sim_progress', '/sim/job/:jobId/progress', SimProgressHandler, PERM.PERM_VIEW);
+    ctx.Route('sim_code_assets', '/sim/assets/:file', SimCodeAssetsHandler, PERM.PERM_VIEW);
     ctx.Route('sim_diff', '/sim/diff/:tid/:left/:right', SimDiffHandler, PERM.PERM_VIEW);
     await Promise.all([
         db.ensureIndexes(jobColl, { name: 'expire', key: { expireAt: 1 }, expireAfterSeconds: 0 }),

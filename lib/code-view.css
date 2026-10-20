@@ -1,0 +1,19 @@
+.sim-code-view { color: #263348; background: #fff; }
+.sim-code-view .sim-code-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 600px; font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.sim-code-view .sim-code-side { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); min-width: 0; border-bottom: 1px solid #f1f3f6; }
+.sim-code-view .sim-code-side + .sim-code-side { border-left: 1px solid #dfe4ea; }
+.sim-code-view .sim-code-number { padding: 2px 10px 2px 3px; color: #87919e; text-align: right; user-select: none; background: #f7f9fb; }
+.sim-code-view .sim-code-text { display: block; min-height: 1.6em; margin: 0; padding: 2px 10px; color: inherit; background: transparent; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
+.sim-code-view .sim-token-comment { color: #74808e; font-style: italic; }
+.sim-code-view .sim-token-keyword { color: #2459b3; font-weight: 600; }
+.sim-code-view .sim-token-string { color: #a85c19; }
+.sim-code-view .sim-token-number { color: #8050b6; }
+.sim-code-view .sim-token-function { color: #68449c; }
+.sim-code-view .sim-token-type { color: #086f84; }
+.sim-code-view .sim-token-operator, .sim-code-view .sim-token-punctuation { color: #596984; }
+.sim-code-view .sim-token-variable { color: #7d4c8d; }
+.sim-code-view .sim-token-property, .sim-code-view .sim-token-tag { color: #156b9a; }
+@media (max-width: 640px) {
+    .sim-code-view .sim-code-row { min-width: 480px; font-size: 12px; }
+    .sim-code-view .sim-code-side { grid-template-columns: 2.5rem minmax(0, 1fr); }
+}

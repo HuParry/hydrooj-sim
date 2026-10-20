@@ -201,32 +201,16 @@ async function openDiff(pair) {
     const request = ++diffRequest;
     const dialog = $('diff-dialog');
     const content = $('diff-content');
-    content.replaceChildren(element('p', '正在加载代码差异…', 'message'));
-    for (const side of ['left', 'right']) {
-        const label = recordLabel(pair[side]);
-        label.append(document.createTextNode(` · ${pair[side].lang}`));
-        $(`diff-${side}`).replaceChildren(label);
-    }
+    content.replaceChildren(element('p', '正在加载代码…', 'message'));
+    $('diff-left').textContent = '提交 A';
+    $('diff-right').textContent = '提交 B';
     if (!dialog.open) dialog.showModal();
     try {
         const data = await json(`/api/jobs/${currentJob}/diff?left=${pair.left.id}&right=${pair.right.id}`);
         if (request !== diffRequest || !dialog.open) return;
-        const fragment = document.createDocumentFragment();
-        for (const row of data.rows) {
-            const line = element('div', undefined, 'diff-row');
-            for (const side of ['left', 'right']) {
-                const changed = row[`${side}Changed`];
-                const cell = element('div', undefined, `diff-side${changed ? side === 'left' ? ' removed' : ' added' : ''}`);
-                cell.append(element('span', row[`${side}Number`] === null ? '' : String(row[`${side}Number`]), 'line-number'));
-                const code = element('code');
-                for (const part of row[side]) code.append(element('span', part.text, part.changed ? side === 'left' ? 'word-removed' : 'word-added' : ''));
-                cell.append(code);
-                line.append(cell);
-            }
-            fragment.append(line);
-        }
-        content.replaceChildren(fragment);
-        content.scrollTop = 0;
+        SimCodeView.renderTitle($('diff-left'), '提交 A', data.left);
+        SimCodeView.renderTitle($('diff-right'), '提交 B', data.right);
+        SimCodeView.render(content, data);
     } catch (error) {
         if (request === diffRequest && dialog.open) content.replaceChildren(element('p', error.message, 'message error'));
     }

@@ -65,7 +65,9 @@ jobs:
               for (const file of [
                 "index.ts", "template/sim.html", "LICENSE",
                 "lib/engine.cjs", "lib/engine.d.cts",
-                "standalone/server.cjs", "standalone/archive.cjs", "standalone/worker.cjs", "standalone/diff.cjs",
+                "standalone/server.cjs", "standalone/archive.cjs", "standalone/worker.cjs",
+                "lib/code-view.cjs", "lib/code-view.d.cts", "lib/code-view-ui.js", "lib/code-view.css",
+                "lib/vendor/prism.cjs", "lib/vendor/PRISMJS-LICENSE.txt",
                 "standalone/public/index.html", "standalone/public/app.js", "standalone/public/style.css",
                 "lib/jplag-6.2.0-jar-with-dependencies.jar",
                 "runtime/linux-x64/bin/java", "runtime/linux-x64/lib/modules",

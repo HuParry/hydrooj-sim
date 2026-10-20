@@ -9,6 +9,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { randomBytes } = require('node:crypto');
 const { Worker } = require('node:worker_threads');
+const { buildCodeView } = require('../lib/code-view.cjs');
 const HOST = process.env.HOST ?? '0.0.0.0';
 const PORT = Number(process.env.PORT ?? 3000);
 const TIMEOUT = Number(process.env.SIM_TIMEOUT_SECONDS ?? 300);
@@ -22,42 +23,20 @@ let root;
 let closing = false;
 let diffBusy = false;
 
-function runDiff(dir, left, right) {
+async function runDiff(dir, left, right) {
     if (diffBusy) {
-        const error = new Error('正在生成其他代码差异，请稍后重试。');
+        const error = new Error('正在加载其他代码，请稍后重试。');
         error.status = 429;
         throw error;
     }
     diffBusy = true;
-    return new Promise((resolve, reject) => {
-        let worker;
-        try {
-            worker = new Worker(path.join(__dirname, 'diff.cjs'), {
-                workerData: { dir, left, right },
-                resourceLimits: { maxOldGenerationSizeMb: 256 },
-            });
-        } catch (error) {
-            diffBusy = false;
-            reject(error);
-            return;
-        }
-        const timer = setTimeout(() => {
-            reject(new Error('代码差异生成超时，请下载原始提交后比较。'));
-            void worker.terminate();
-        }, 15000);
-        let received = false;
-        worker.once('message', (data) => {
-            received = true;
-            if (data.error) reject(new Error(data.error));
-            else resolve(data.rows);
-        });
-        worker.once('error', reject);
-        worker.once('exit', () => {
-            clearTimeout(timer);
-            diffBusy = false;
-            if (!received) reject(new Error('无法生成代码差异，请稍后重试。'));
-        });
-    });
+    try {
+        const [a, b] = await Promise.all([left, right].map((record) =>
+            fs.readFile(path.join(dir, 'codes', `${record.id}.txt`), 'utf8')));
+        return await buildCodeView({ code: a, lang: left.lang }, { code: b, lang: right.lang });
+    } finally {
+        diffBusy = false;
+    }
 }
 
 function reply(res, status, data) {
@@ -150,6 +129,8 @@ const server = http.createServer(async (req, res) => {
             '/': ['index.html', 'text/html; charset=utf-8'],
             '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
             '/style.css': ['style.css', 'text/css; charset=utf-8'],
+            '/code-view-ui.js': ['../../lib/code-view-ui.js', 'text/javascript; charset=utf-8'],
+            '/code-view.css': ['../../lib/code-view.css', 'text/css; charset=utf-8'],
         };
         if (req.method === 'GET' && assets[url.pathname]) {
             const [file, type] = assets[url.pathname];
@@ -189,7 +170,7 @@ const server = http.createServer(async (req, res) => {
             const job = jobs.get(match[1]);
             if (!job) return reply(res, 404, { error: '任务不存在或已过期。' });
             if (!job.finishedAt) return reply(res, 409, { error: '任务仍在运行，请稍后重试。' });
-            if (diffBusy) return reply(res, 409, { error: '正在生成代码差异，请稍后重试。' });
+            if (diffBusy) return reply(res, 409, { error: '正在加载代码，请稍后重试。' });
             jobs.delete(job.id);
             await fs.rm(job.dir, { recursive: true, force: true });
             return reply(res, 200, { deleted: true });
@@ -202,8 +183,10 @@ const server = http.createServer(async (req, res) => {
             const right = url.searchParams.get('right');
             const pair = job.results?.flatMap((result) => result.pairs).find((item) => item.left.id === left && item.right.id === right);
             if (job.state !== 'done' || !pair) return reply(res, 404, { error: '比较结果不存在。' });
-            const rows = await runDiff(job.dir, left, right);
-            return reply(res, 200, { left: pair.left, right: pair.right, rows });
+            const codeView = await runDiff(job.dir, pair.left, pair.right);
+            const info = (record) => ({ ...record, userUrl: `${job.ojUrl}/user/${record.uid}`,
+                recordUrl: `${job.ojUrl}/record/${record.id}` });
+            return reply(res, 200, { left: info(pair.left), right: info(pair.right), ...codeView });
         }
         return reply(res, 404, { error: '页面不存在。' });
     } catch (error) {

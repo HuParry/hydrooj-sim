@@ -1,5 +1,6 @@
 {% extends "layout/basic.html" %}
 {% block content %}
+<link rel="stylesheet" href="{{ url('sim_code_assets', file='code-view.css') }}">
 <style>
   .sim-diff-trigger { margin: 0; padding: .35rem .8rem; white-space: nowrap; }
   .sim-diff-dialog { width: min(96vw, 1600px); max-width: none; height: min(88vh, 920px); max-height: none; padding: 0; border: 0; border-radius: 10px; box-shadow: 0 18px 60px rgba(0, 0, 0, .28); }
@@ -12,17 +13,6 @@
   .sim-diff-submissions > div { min-width: 0; padding: .6rem 1rem; overflow-wrap: anywhere; }
   .sim-diff-submissions > div + div { border-left: 1px solid #dfe4ea; }
   .sim-diff-scroll { flex: 1; min-height: 0; overflow: auto; background: #fff; }
-  .sim-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-width: 680px; }
-  .sim-diff-side { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); min-width: 0; border-bottom: 1px solid #f0f2f4; }
-  .sim-diff-side + .sim-diff-side { border-left: 1px solid #dfe4ea; }
-  .sim-diff-line-number { padding: .1rem .6rem .1rem .2rem; color: #87919e; text-align: right; user-select: none; background: #f7f9fb; }
-  .sim-diff-code { display: block; min-height: 1.5em; margin: 0; padding: .1rem .6rem; font-family: var(--code-font-family, monospace); font-size: .85rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; }
-  .sim-diff-removed { background: #fff0ef; }
-  .sim-diff-added { background: #e9f8ed; }
-  .sim-diff-removed .sim-diff-line-number { color: #b33a35; background: #ffe2df; }
-  .sim-diff-added .sim-diff-line-number { color: #258445; background: #d9f1df; }
-  .sim-diff-word-removed { color: #b52621; background: #ffd5d1; }
-  .sim-diff-word-added { color: #187a35; background: #c8edcf; }
   .sim-diff-message { padding: 1.5rem; color: #59636e; }
   .sim-progress { margin-top: 1.4rem; padding: 1rem 1.2rem; border: 1px solid #d8e4f2; border-radius: 6px; background: #f7faff; }
   .sim-progress__heading { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .5rem; }
@@ -132,6 +122,7 @@
 {% endif %}
 {% endblock %}
 {% block script %}
+<script src="{{ url('sim_code_assets', file='code-view-ui.js') }}"></script>
 <script>
 (() => {
   const form = document.getElementById('sim-start-form');
@@ -188,50 +179,10 @@
   const rightTitle = document.getElementById('sim-diff-right');
   let requestNumber = 0;
 
-  function renderSide(row, side) {
-    const cell = document.createElement('div');
-    const changed = side === 'left' ? row.leftChanged : row.rightChanged;
-    cell.className = 'sim-diff-side' + (changed ? side === 'left' ? ' sim-diff-removed' : ' sim-diff-added' : '');
-    const number = document.createElement('span');
-    number.className = 'sim-diff-line-number';
-    number.textContent = row[side + 'Number'] == null ? '' : String(row[side + 'Number']);
-    const code = document.createElement('code');
-    code.className = 'sim-diff-code';
-    for (const part of row[side]) {
-      const text = document.createElement('span');
-      if (part.changed) text.className = side === 'left' ? 'sim-diff-word-removed' : 'sim-diff-word-added';
-      text.textContent = part.text;
-      code.appendChild(text);
-    }
-    cell.append(number, code);
-    return cell;
-  }
-
-  function renderSubmissionTitle(target, label, submission) {
-    const userLink = document.createElement('a');
-    userLink.href = submission.userUrl;
-    userLink.textContent = `UID ${submission.uid}`;
-    const recordLink = document.createElement('a');
-    recordLink.href = submission.recordUrl;
-    recordLink.textContent = submission.rid;
-    target.replaceChildren(
-      document.createTextNode(`${label} · `), userLink,
-      document.createTextNode(` · ${submission.lang} · `), recordLink,
-    );
-  }
-
   function render(data) {
-    renderSubmissionTitle(leftTitle, '提交 A', data.left);
-    renderSubmissionTitle(rightTitle, '提交 B', data.right);
-    const fragment = document.createDocumentFragment();
-    for (const row of data.rows) {
-      const line = document.createElement('div');
-      line.className = 'sim-diff-row';
-      line.append(renderSide(row, 'left'), renderSide(row, 'right'));
-      fragment.appendChild(line);
-    }
-    content.replaceChildren(fragment);
-    content.scrollTop = 0;
+    SimCodeView.renderTitle(leftTitle, '提交 A', data.left);
+    SimCodeView.renderTitle(rightTitle, '提交 B', data.right);
+    SimCodeView.render(content, data);
   }
 
   document.addEventListener('click', async (event) => {
@@ -240,7 +191,7 @@
     const current = ++requestNumber;
     leftTitle.textContent = '提交 A';
     rightTitle.textContent = '提交 B';
-    content.textContent = '正在加载代码差异…';
+    content.textContent = '正在加载代码…';
     content.classList.add('sim-diff-message');
     if (!dialog.open) dialog.showModal();
     try {
@@ -252,7 +203,7 @@
       render(data);
     } catch (error) {
       if (current !== requestNumber || !dialog.open) return;
-      content.textContent = '无法加载代码差异，请刷新页面后重试。';
+      content.textContent = '无法加载代码，请刷新页面后重试。';
     }
   });
   dialog.querySelector('[data-sim-diff-close]').addEventListener('click', () => dialog.close());
