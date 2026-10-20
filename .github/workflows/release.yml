@@ -52,6 +52,9 @@ jobs:
           const files = new Map(pack.files.map(file => [file.path, file]));
           for (const file of [
             'package.json', 'index.ts', 'template/sim.html', 'LICENSE',
+            'lib/engine.cjs', 'lib/engine.d.cts',
+            'standalone/server.cjs', 'standalone/archive.cjs', 'standalone/worker.cjs', 'standalone/diff.cjs',
+            'standalone/public/index.html', 'standalone/public/app.js', 'standalone/public/style.css',
             'lib/jplag-6.2.0-jar-with-dependencies.jar', 'lib/JPLAG-LICENSE.txt',
             'lib/vendor/jsdiff.js', 'lib/vendor/JSDIFF-LICENSE.txt',
             'lib/vendor/adm-zip/adm-zip.js', 'lib/vendor/adm-zip/LICENSE',

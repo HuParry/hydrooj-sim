@@ -64,6 +64,9 @@ jobs:
               const files = new Set(JSON.parse(input)[0].files.map(file => file.path));
               for (const file of [
                 "index.ts", "template/sim.html", "LICENSE",
+                "lib/engine.cjs", "lib/engine.d.cts",
+                "standalone/server.cjs", "standalone/archive.cjs", "standalone/worker.cjs", "standalone/diff.cjs",
+                "standalone/public/index.html", "standalone/public/app.js", "standalone/public/style.css",
                 "lib/jplag-6.2.0-jar-with-dependencies.jar",
                 "runtime/linux-x64/bin/java", "runtime/linux-x64/lib/modules",
                 "runtime/linux-x64/lib/ct.sym",

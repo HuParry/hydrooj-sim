@@ -1,9 +1,11 @@
 {
     "name": "hydrooj-sim",
-    "version": "0.2.12",
-    "description": "Contest code similarity checker for Hydro OJ using JPlag",
+    "version": "1.0.0",
+    "description": "Hydro OJ contest code similarity checker: addon and standalone ZIP-upload website",
     "main": "index.ts",
-    "files": ["index.ts", "template/", "lib/", "runtime/linux-x64/", "README.md", "LICENSE"],
+    "files": ["index.ts", "template/", "lib/", "standalone/", "runtime/linux-x64/", "README.md", "LICENSE"],
+    "bin": { "hydrooj-sim": "standalone/server.cjs" },
+    "scripts": { "start": "node standalone/server.cjs" },
     "repository": {
         "type": "git",
         "url": "https://github.com/HuParry/hydrooj-sim"
