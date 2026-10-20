@@ -13,15 +13,6 @@ function element(tag, text, className) {
     return node;
 }
 
-function ojBase() {
-    const value = $('oj-url').value.trim();
-    if (!value) return '';
-    try {
-        const url = new URL(value);
-        return ['http:', 'https:'].includes(url.protocol) ? url.href.replace(/\/$/, '') : '';
-    } catch { return ''; }
-}
-
 function link(label, route) {
     const base = resultOjUrl;
     if (!base) return element('span', label);
@@ -126,7 +117,6 @@ async function watch(id) {
         try {
             const job = await json(`/api/jobs/${id}`);
             if (request !== polling) return;
-            $('oj-url').value = job.ojUrl;
             resultOjUrl = job.ojUrl;
             $('percent').textContent = job.percent === null ? '' : `${job.percent}%`;
             if (job.percent === null) $('progress').removeAttribute('value');
@@ -160,7 +150,7 @@ async function watch(id) {
 function upload(file, threshold, token) {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/jobs?threshold=${encodeURIComponent(threshold)}&ojUrl=${encodeURIComponent(ojBase())}`);
+        xhr.open('POST', `/api/jobs?threshold=${encodeURIComponent(threshold)}`);
         xhr.setRequestHeader('Content-Type', 'application/zip');
         xhr.responseType = 'json';
         xhr.timeout = 120000;
@@ -184,7 +174,6 @@ $('upload-form').addEventListener('submit', async (event) => {
     const file = $('archive').files[0];
     if (!file) return;
     if (file.size > 128 * 1024 * 1024) return showError('ZIP 大小不能超过 128 MiB。');
-    if (!ojBase()) return showError('请填写有效的 HTTP 或 HTTPS OJ 地址。');
     const token = ++polling;
     showError('');
     $('start').disabled = true;

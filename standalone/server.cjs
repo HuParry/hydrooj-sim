@@ -9,10 +9,10 @@ const path = require('node:path');
 const os = require('node:os');
 const { randomBytes } = require('node:crypto');
 const { Worker } = require('node:worker_threads');
-
-const HOST = process.env.HOST || '0.0.0.0';
-const PORT = Number(process.env.PORT || 3000);
-const TIMEOUT = Number(process.env.SIM_TIMEOUT_SECONDS || 300);
+const HOST = process.env.HOST ?? '0.0.0.0';
+const PORT = Number(process.env.PORT ?? 3000);
+const TIMEOUT = Number(process.env.SIM_TIMEOUT_SECONDS ?? 300);
+let OJ_URL;
 const MAX_UPLOAD = 128 * 1024 * 1024;
 const TTL = 24 * 60 * 60 * 1000;
 const MAX_JOBS = 10;
@@ -166,18 +166,10 @@ const server = http.createServer(async (req, res) => {
             if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
                 return reply(res, 400, { error: '相似度阈值必须为 0–100 之间的数字。' });
             }
-            let ojUrl;
-            try {
-                const parsed = new URL(url.searchParams.get('ojUrl'));
-                if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error();
-                ojUrl = parsed.href.replace(/\/+$/, '');
-            } catch {
-                return reply(res, 400, { error: '请填写有效的 HTTP 或 HTTPS OJ 地址，不要包含账号、查询参数或锚点。' });
-            }
             if (jobs.size >= MAX_JOBS) return reply(res, 429, { error: '当前任务已满，请删除已完成的历史任务后重试。' });
             // Reserve before awaiting body to bound simultaneous uploads and queue size.
             const id = randomBytes(24).toString('hex');
-            const job = { id, ojUrl, state: 'uploading', threshold, completed: 0, total: 0, dir: path.join(root, id), createdAt: Date.now() };
+            const job = { id, ojUrl: OJ_URL, state: 'uploading', threshold, completed: 0, total: 0, dir: path.join(root, id), createdAt: Date.now() };
             jobs.set(id, job);
             try {
                 await fs.mkdir(job.dir);
@@ -221,8 +213,21 @@ const server = http.createServer(async (req, res) => {
 server.requestTimeout = 120000;
 
 async function main() {
-    if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('PORT 必须为 1–65535。');
-    if (!Number.isFinite(TIMEOUT) || TIMEOUT < 10 || TIMEOUT > 1800) throw new Error('SIM_TIMEOUT_SECONDS 必须为 10–1800。');
+    if (process.argv.length === 3 && ['--help', '-h'].includes(process.argv[2])) {
+        console.log('用法：SIM_OJ_URL=https://oj.example.com hydrooj-sim\n可选环境变量：HOST、PORT、SIM_TIMEOUT_SECONDS。');
+        return;
+    }
+    if (process.argv.length > 2) throw new Error('不支持启动参数；请通过 SIM_OJ_URL、HOST、PORT、SIM_TIMEOUT_SECONDS 环境变量配置。');
+    try {
+        const parsed = new URL((process.env.SIM_OJ_URL || '').trim());
+        if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error();
+        OJ_URL = parsed.href.replace(/\/+$/, '');
+    } catch {
+        throw new Error('请设置 SIM_OJ_URL 为有效的 HTTP 或 HTTPS OJ 地址，例如 https://oj.example.com/d/example；不要包含账号、查询参数或锚点。');
+    }
+    if (!HOST.trim() || /\s|[/?#]/.test(HOST)) throw new Error('HOST 必须为有效的监听地址，例如 0.0.0.0。');
+    if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) throw new Error('PORT 必须为 1–65535 的整数。');
+    if (!Number.isInteger(TIMEOUT) || TIMEOUT < 10 || TIMEOUT > 1800) throw new Error('SIM_TIMEOUT_SECONDS 必须为 10–1800 的整数。');
     root = await fs.mkdtemp(path.join(os.tmpdir(), 'hydro-sim-web-'));
     server.on('error', async (error) => {
         console.error(error.message);

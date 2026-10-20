@@ -1,6 +1,6 @@
 {
     "name": "hydrooj-sim",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Hydro OJ contest code similarity checker: addon and standalone ZIP-upload website",
     "main": "index.ts",
     "files": ["index.ts", "template/", "lib/", "standalone/", "runtime/linux-x64/", "README.md", "LICENSE"],
